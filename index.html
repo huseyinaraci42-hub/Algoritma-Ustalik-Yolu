@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Algoritma Ustalık Yolu — Tam Öğrenme Paneli</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#eef3fb; --paper2:#e3ebf7; --ink:#252a63; --ink-soft:#5b639a;
+  --line:#c3d0ea; --amber:#ff8a3d; --amber-d:#e7701f;
+  --seq:#129e8f; --loop:#7c5cff; --cond:#ff5d73; --mastery:#21a366; --locked:#9aa6bd;
+  --white:#ffffff; --shadow:0 10px 30px rgba(37,42,99,.12);
+  --r:18px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Nunito',sans-serif; color:var(--ink);
+  background:
+    linear-gradient(var(--paper),var(--paper)),
+    repeating-linear-gradient(0deg,transparent 0 31px,rgba(80,110,180,.06) 31px 32px),
+    repeating-linear-gradient(90deg,transparent 0 31px,rgba(80,110,180,.06) 31px 32px);
+  background-blend-mode:normal;
+  min-height:100vh; padding:0 0 60px;
+}
+.wrap{max-width:1080px;margin:0 auto;padding:0 18px}
+h1,h2,h3,.disp{font-family:'Fredoka',sans-serif;letter-spacing:.2px}
+
+/* ---------- Header ---------- */
+header{padding:26px 0 14px}
+.brandrow{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.logo{width:54px;height:54px;border-radius:14px;background:var(--ink);display:grid;place-items:center;box-shadow:var(--shadow);flex:0 0 auto}
+.logo svg{width:34px;height:34px}
+.brandtxt h1{margin:0;font-size:26px;line-height:1.05;color:var(--ink)}
+.brandtxt p{margin:2px 0 0;color:var(--ink-soft);font-weight:700;font-size:13.5px}
+.tagchip{font-family:'Space Mono';font-size:11px;background:var(--ink);color:#fff;padding:3px 9px;border-radius:20px;margin-left:6px;vertical-align:middle}
+
+.setup{margin-top:16px;background:var(--white);border:1.5px solid var(--line);border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow);display:grid;grid-template-columns:1.1fr 1.4fr auto;gap:12px;align-items:end}
+.setup label{display:block;font-weight:800;font-size:12px;color:var(--ink-soft);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+.setup input{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:11px;font-family:'Nunito';font-size:14.5px;font-weight:700;color:var(--ink);background:var(--paper)}
+.setup input:focus{outline:none;border-color:var(--amber)}
+.modetoggle{display:flex;background:var(--paper2);border-radius:11px;padding:4px;gap:4px}
+.modetoggle button{border:none;background:transparent;font-family:'Fredoka';font-weight:600;font-size:13px;color:var(--ink-soft);padding:8px 12px;border-radius:8px;cursor:pointer;white-space:nowrap}
+.modetoggle button.on{background:var(--ink);color:#fff;box-shadow:0 3px 8px rgba(37,42,99,.25)}
+.keyhint{grid-column:1/-1;font-size:12px;color:var(--ink-soft);margin:-2px 0 0}
+
+/* ---------- Mastery Path (signature) ---------- */
+.path{margin:22px 0 8px;background:var(--white);border:1.5px solid var(--line);border-radius:var(--r);padding:20px 14px 16px;box-shadow:var(--shadow);position:relative;overflow-x:auto}
+.path h2{margin:0 0 4px;font-size:16px;color:var(--ink)}
+.path .sub{color:var(--ink-soft);font-weight:700;font-size:12.5px;margin:0 0 14px}
+.stations{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;min-width:560px;position:relative}
+.track{position:absolute;top:42px;left:6%;right:6%;height:4px;background:repeating-linear-gradient(90deg,var(--line) 0 10px,transparent 10px 18px);z-index:0}
+.station{flex:1;text-align:center;position:relative;z-index:1;cursor:pointer;background:none;border:none;font-family:inherit}
+.node{width:74px;height:74px;border-radius:50%;margin:0 auto;display:grid;place-items:center;background:var(--white);border:4px solid var(--line);position:relative;transition:.25s}
+.node .num{font-family:'Fredoka';font-weight:700;font-size:26px;color:var(--locked)}
+.node .ico{font-size:26px}
+.station.active .node{border-color:var(--amber);box-shadow:0 0 0 5px rgba(255,138,61,.18)}
+.station.mastered .node{border-color:var(--mastery);background:#e9f8f0}
+.station.mastered .num{color:var(--mastery)}
+.station.locked{cursor:not-allowed;opacity:.7}
+.lockbadge{position:absolute;right:-4px;bottom:-4px;width:26px;height:26px;border-radius:50%;background:var(--locked);display:grid;place-items:center;font-size:13px;border:3px solid var(--white)}
+.station.mastered .lockbadge{background:var(--mastery)}
+.ring{position:absolute;inset:-4px}
+.st-name{font-family:'Fredoka';font-weight:600;font-size:13px;margin-top:8px;color:var(--ink)}
+.st-tag{font-family:'Space Mono';font-size:10px;color:var(--ink-soft);display:block;margin-top:1px}
+.st-pct{font-weight:800;font-size:12px;margin-top:3px;color:var(--ink-soft)}
+.station.mastered .st-pct{color:var(--mastery)}
+
+/* ---------- Unit panel ---------- */
+.panel{margin-top:18px;background:var(--white);border:1.5px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+.phead{padding:16px 20px;color:#fff;display:flex;align-items:center;gap:12px}
+.phead .pico{width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.22);display:grid;place-items:center;font-size:22px;flex:0 0 auto}
+.phead h2{margin:0;font-size:20px}
+.phead p{margin:1px 0 0;font-size:12.5px;font-weight:700;opacity:.92}
+.pbody{padding:18px 20px}
+.u0 .phead{background:linear-gradient(120deg,var(--seq),#0c8576)}
+.u1 .phead{background:linear-gradient(120deg,var(--loop),#5b3fd6)}
+.u2 .phead{background:linear-gradient(120deg,var(--cond),#e23e57)}
+.uE .phead{background:linear-gradient(120deg,var(--amber),var(--amber-d))}
+
+.step{border:1.5px dashed var(--line);border-radius:14px;padding:14px 16px;margin-bottom:14px;background:var(--paper)}
+.step.solid{border-style:solid;background:var(--white)}
+.steptag{display:inline-block;font-family:'Space Mono';font-size:11px;background:var(--ink);color:#fff;padding:3px 9px;border-radius:7px;margin-bottom:8px}
+.step h3{margin:0 0 6px;font-size:16px}
+.step p{margin:0 0 6px;line-height:1.55;font-size:14.5px}
+.lead{font-size:15px}
+
+/* Robot grid */
+.simrow{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.gridbox{flex:0 0 auto}
+.grid{display:grid;gap:4px;background:var(--paper2);padding:8px;border-radius:14px;position:relative;border:1.5px solid var(--line)}
+.cell{width:52px;height:52px;border-radius:9px;background:var(--white);display:grid;place-items:center;position:relative}
+.cell.wall{background:var(--ink);background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.08) 0 6px,transparent 6px 12px)}
+.cell.goal::after{content:"🔋";font-size:26px}
+.cell.start{box-shadow:inset 0 0 0 3px rgba(255,138,61,.4)}
+.robot{position:absolute;width:46px;height:46px;display:grid;place-items:center;transition:transform .32s ease;z-index:5;will-change:transform}
+.robot svg{width:42px;height:42px;filter:drop-shadow(0 3px 4px rgba(0,0,0,.2))}
+
+/* Command builder */
+.builder{flex:1 1 320px;min-width:300px}
+.palette{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.cmd-btn{font-family:'Space Mono';font-weight:700;font-size:13px;border:none;border-radius:11px;padding:10px 12px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 3px 0 rgba(0,0,0,.12);transition:transform .08s}
+.cmd-btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.12)}
+.cmd-F{background:var(--seq)} .cmd-R{background:#3a86c9} .cmd-L{background:#6e7bd6}
+.cmd-loop{background:var(--loop)}
+.program{min-height:54px;border:1.5px dashed var(--line);border-radius:12px;padding:8px;background:var(--paper);display:flex;flex-wrap:wrap;gap:6px;align-content:flex-start}
+.program:empty::before{content:"Komutları buraya ekle…";color:var(--ink-soft);font-weight:700;font-size:13px;padding:6px}
+.chip{font-family:'Space Mono';font-size:12px;font-weight:700;color:#fff;border-radius:9px;padding:7px 9px;display:flex;align-items:center;gap:5px}
+.chip .x{cursor:pointer;opacity:.8;font-weight:700}
+.chip.cF{background:var(--seq)} .chip.cR{background:#3a86c9} .chip.cL{background:#6e7bd6}
+.actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.btn{font-family:'Fredoka';font-weight:600;font-size:14px;border:none;border-radius:11px;padding:11px 16px;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.btn-run{background:var(--amber);color:#fff;box-shadow:0 4px 0 var(--amber-d)}
+.btn-run:active{transform:translateY(2px);box-shadow:0 2px 0 var(--amber-d)}
+.btn-ghost{background:var(--paper2);color:var(--ink)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.runmsg{margin-top:10px;font-weight:800;font-size:14px;padding:10px 12px;border-radius:11px;display:none}
+.runmsg.ok{display:block;background:#e9f8f0;color:var(--mastery);border:1.5px solid #b7e6cd}
+.runmsg.bad{display:block;background:#fdeef0;color:var(--cond);border:1.5px solid #f7c8cf}
+
+/* loop builder */
+.loopbuilder{display:flex;flex-direction:column;gap:8px}
+.loopline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--paper);border:1.5px solid var(--loop);border-radius:12px;padding:10px}
+.loopline .lbl{font-family:'Fredoka';font-weight:600;color:var(--loop)}
+.loopline input[type=number]{width:60px;padding:7px;border:1.5px solid var(--line);border-radius:9px;font-family:'Space Mono';font-weight:700;text-align:center}
+
+/* conditional builder */
+.condbuilder{background:var(--paper);border:1.5px solid var(--cond);border-radius:12px;padding:12px}
+.condline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-weight:700}
+.condline select{padding:8px 10px;border:1.5px solid var(--line);border-radius:10px;font-family:'Nunito';font-weight:700;color:var(--ink);background:#fff}
+.kw{font-family:'Space Mono';font-weight:700;color:var(--cond)}
+
+/* Quiz */
+.q{margin-bottom:14px}
+.q .qtext{font-weight:800;margin-bottom:7px;font-size:14.5px}
+.opt{display:block;width:100%;text-align:left;border:1.5px solid var(--line);background:var(--white);border-radius:11px;padding:10px 13px;margin-bottom:7px;cursor:pointer;font-family:'Nunito';font-weight:700;font-size:14px;color:var(--ink);transition:.12s}
+.opt:hover{border-color:var(--ink-soft)}
+.opt.sel{border-color:var(--amber);background:#fff6ef}
+.opt.correct{border-color:var(--mastery);background:#e9f8f0}
+.opt.wrong{border-color:var(--cond);background:#fdeef0}
+.opt:disabled{cursor:default}
+.quizfoot{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.scorebadge{font-family:'Fredoka';font-weight:700;font-size:15px;padding:8px 14px;border-radius:11px}
+.scorebadge.pass{background:#e9f8f0;color:var(--mastery)}
+.scorebadge.fail{background:#fdeef0;color:var(--cond)}
+
+/* AI feedback */
+.ai{margin-top:12px;border:1.5px solid var(--line);border-radius:14px;padding:0;overflow:hidden;background:var(--white)}
+.ai-head{background:var(--ink);color:#fff;padding:9px 14px;font-family:'Fredoka';font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:8px}
+.ai-head .live{font-family:'Space Mono';font-size:10px;background:var(--amber);padding:2px 7px;border-radius:10px;margin-left:auto}
+.ai-body{padding:13px 15px;line-height:1.6;font-size:14.5px;white-space:pre-wrap;color:var(--ink)}
+.ai-body.muted{color:var(--ink-soft);font-weight:700}
+.spinner{display:inline-block;width:15px;height:15px;border:2.5px solid var(--line);border-top-color:var(--amber);border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:7px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+textarea{width:100%;min-height:70px;border:1.5px solid var(--line);border-radius:12px;padding:11px;font-family:'Nunito';font-weight:600;font-size:14px;resize:vertical;color:var(--ink);background:var(--paper)}
+textarea:focus{outline:none;border-color:var(--amber)}
+
+.locked-msg{text-align:center;padding:40px 20px;color:var(--ink-soft)}
+.locked-msg .big{font-size:50px;margin-bottom:10px}
+.locked-msg h3{font-size:18px;margin:0 0 6px;color:var(--ink)}
+
+/* Teacher view */
+.teacher{margin-top:18px;background:var(--white);border:1.5px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:18px 20px;display:none}
+.teacher h2{margin:0 0 4px;font-size:18px}
+.teacher .sub{color:var(--ink-soft);font-weight:700;font-size:13px;margin:0 0 14px}
+table.tt{width:100%;border-collapse:collapse;font-size:14px}
+table.tt th,table.tt td{text-align:left;padding:10px 10px;border-bottom:1.5px solid var(--line)}
+table.tt th{font-family:'Fredoka';font-weight:600;color:var(--ink-soft);font-size:12.5px;text-transform:uppercase;letter-spacing:.4px}
+.bar{height:11px;border-radius:6px;background:var(--paper2);overflow:hidden;min-width:90px}
+.bar > i{display:block;height:100%;border-radius:6px;background:var(--mastery)}
+.status-pill{font-family:'Fredoka';font-weight:600;font-size:12px;padding:4px 11px;border-radius:20px}
+.sp-m{background:#e9f8f0;color:var(--mastery)} .sp-p{background:#fff6ef;color:var(--amber-d)} .sp-l{background:#eef0f5;color:var(--locked)}
+.expbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+
+.footer{text-align:center;color:var(--ink-soft);font-size:12px;margin-top:26px;font-weight:700;line-height:1.6}
+.hide{display:none!important}
+
+@media(max-width:680px){
+  .setup{grid-template-columns:1fr}
+  .brandtxt h1{font-size:22px}
+  .cell{width:42px;height:42px}
+  .robot{width:38px;height:38px} .robot svg{width:34px;height:34px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header>
+    <div class="brandrow">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="5" y="8" width="14" height="11" rx="3" fill="#ff8a3d"/><circle cx="9.3" cy="13" r="1.6" fill="#252a63"/><circle cx="14.7" cy="13" r="1.6" fill="#252a63"/><rect x="10.7" y="3.5" width="2.6" height="3.5" rx="1.3" fill="#fff"/><circle cx="12" cy="3" r="1.6" fill="#fff"/><rect x="2.5" y="11" width="2.5" height="5" rx="1.2" fill="#fff"/><rect x="19" y="11" width="2.5" height="5" rx="1.2" fill="#fff"/></svg>
+      </div>
+      <div class="brandtxt">
+        <h1>Algoritma Ustalık Yolu <span class="tagchip">TAM ÖĞRENME</span></h1>
+        <p>Robi'ye yol göster, her üniteyi <b>ustalaşana</b> kadar tamamla — sonra kilit açılır.</p>
+      </div>
+    </div>
+
+    <div class="setup">
+      <div>
+        <label>Öğrenci Adı</label>
+        <input id="studentName" type="text" placeholder="Adın Soyadın" autocomplete="off">
+      </div>
+      <div id="keyField">
+        <label>OpenRouter API Anahtarı <span style="font-weight:600;text-transform:none">(öğretmen girer)</span></label>
+        <input id="apiKey" type="password" placeholder="sk-or-v1-…" autocomplete="off">
+      </div>
+      <div class="modetoggle">
+        <button id="mStudent" class="on" onclick="setMode('student')">👧 Öğrenci</button>
+        <button id="mTeacher" onclick="setMode('teacher')">🧑‍🏫 Öğretmen</button>
+      </div>
+      <p class="keyhint">API anahtarı yalnızca <b>yapay zekânın kişisel geri bildirimi</b> için gereklidir. Robot görevleri ve testler anahtar olmadan da çalışır.</p>
+    </div>
+  </header>
+
+  <!-- MASTERY PATH -->
+  <section class="path">
+    <h2>🗺️ Ustalık Yolu</h2>
+    <p class="sub">Tam Öğrenme kuralı: bir önceki üniteyi <b>%80 ustalıkla</b> geçmeden sonraki açılmaz. Acele yok — herkes öğrenebilir.</p>
+    <div class="stations" id="stations"></div>
+  </section>
+
+  <!-- ACTIVE UNIT PANEL -->
+  <section id="panel" class="panel"></section>
+
+  <!-- TEACHER VIEW -->
+  <section id="teacher" class="teacher">
+    <h2>🧑‍🏫 Öğretmen Görünümü</h2>
+    <p class="sub">Bu panel, sınıfta her öğrencinin ekranında ayrı ayrı çalışır. Öğretmen, kimin nerede takıldığını anlık görür ve <b>düzeltme</b> için zaman ayırır.</p>
+    <table class="tt">
+      <thead><tr><th>Ünite</th><th>İzleme Testi</th><th>Ustalık (%80 eşiği)</th><th>Durum</th></tr></thead>
+      <tbody id="ttbody"></tbody>
+    </table>
+    <div class="expbar">
+      <button class="btn btn-run" onclick="downloadReport()">⬇️ Çıkış Bileti / Raporu İndir (.txt)</button>
+      <button class="btn btn-ghost" onclick="copyReport()">📋 Raporu Kopyala</button>
+    </div>
+  </section>
+
+  <p class="footer">
+    Geliştirme ortamı: <b>Claude Code</b> &nbsp;•&nbsp; Canlı yapay zekâ: <b>Google Gemini API</b><br>
+    Tam Öğrenme Modeli (B. S. Bloom) — biçimlendirici değerlendirme + bireysel düzeltici geri bildirim
+  </p>
+</div>
+
+<script>
+/* ============================================================
+   ALGORİTMA USTALIK YOLU
+   Tam Öğrenme Modeli + AI destekli düzeltici geri bildirim
+   ============================================================ */
+
+/* ===== AYARLAR =====
+   Öğrencilerin anahtar girmemesi için aşağıya kendi OpenRouter
+   anahtarını yapıştır (örn. "sk-or-v1-...."). Boş bırakırsan,
+   araç üstteki kutuya anahtar girilmesini ister.
+   GÜVENLİK: Bu dosya yayımlanınca anahtar herkese görünür.
+   Yalnızca ÜCRETSİZ model kullan ve düşük harcama limitli,
+   ödeve özel bir anahtar oluştur; teslimden sonra sil/yenile. */
+const EMBEDDED_KEY = "";  // GÜVENLİK: anahtarı koda gömme! Boş bırak; araç üstteki kutudan anahtar ister.
+const AI_MODEL     = "openrouter/free";  // ücretsiz model yönlendirici (maliyet: 0)
+const AI_ENDPOINT  = "https://openrouter.ai/api/v1/chat/completions";
+
+/* ---------- ROBOT MOTORU (test edildi) ---------- */
+const DIRS=[[-1,0],[0,1],[1,0],[0,-1]]; // Yukarı,Sağ,Aşağı,Sol
+function clone(b){return{r:b.r,c:b.c,dir:b.dir};}
+function aheadBlocked(bot,grid){
+  const[dr,dc]=DIRS[bot.dir];const nr=bot.r+dr,nc=bot.c+dc;
+  if(nr<0||nc<0||nr>=grid.length||nc>=grid[0].length)return true;
+  return grid[nr][nc]===1;
+}
+function runProgram(program,puzzle){
+  const grid=puzzle.grid;let bot=clone(puzzle.start);
+  const trace=[clone(bot)];let failed=false,done=false,steps=0;const MAX=400;
+  const atGoal=()=>bot.r===puzzle.goal.r&&bot.c===puzzle.goal.c;
+  function exec(list){
+    for(const cmd of list){
+      if(failed||done||steps>MAX)return;steps++;
+      if(cmd==='F'){
+        const[dr,dc]=DIRS[bot.dir];const nr=bot.r+dr,nc=bot.c+dc;
+        if(nr<0||nc<0||nr>=grid.length||nc>=grid[0].length||grid[nr][nc]===1){failed=true;return;}
+        bot.r=nr;bot.c=nc;trace.push(clone(bot));if(atGoal()){done=true;return;}
+      }else if(cmd==='R'){bot.dir=(bot.dir+1)%4;trace.push(clone(bot));}
+      else if(cmd==='L'){bot.dir=(bot.dir+3)%4;trace.push(clone(bot));}
+      else if(cmd.type==='repeat'){for(let i=0;i<cmd.n;i++){if(failed||done)return;exec(cmd.body);}}
+      else if(cmd.type==='if'){if(aheadBlocked(bot,grid))exec(cmd.then);else exec(cmd.else);}
+    }
+  }
+  exec(program);
+  return{success:!failed&&atGoal(),failed,reached:atGoal(),trace};
+}
+
+/* ---------- PUZZLE'LAR (çözümleri doğrulandı) ---------- */
+const PUZZLES=[
+  { grid:[[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],
+    start:{r:4,c:0,dir:0}, goal:{r:1,c:3} },              // Ünite 1 — sıralama
+  { grid:[[0],[0],[0],[0],[0],[0]],
+    start:{r:5,c:0,dir:0}, goal:{r:0,c:0} },              // Ünite 2 — döngü (uzun koridor)
+  { grid:[[1,1,1,1,1],[0,0,0,0,0],[1,1,1,1,0],[1,1,1,1,0],[0,0,0,0,0]],
+    start:{r:4,c:4,dir:0}, goal:{r:1,c:0} }               // Ünite 3 — koşul (L koridor)
+];
+
+/* ---------- DURUM ---------- */
+const state={
+  mode:'student', current:0,
+  units:[
+    {practiceDone:false, quizScore:null, quizTotal:5, mastered:false, reflection:''},
+    {practiceDone:false, quizScore:null, quizTotal:5, mastered:false, reflection:''},
+    {practiceDone:false, quizScore:null, quizTotal:5, mastered:false, reflection:''}
+  ],
+  enrichmentText:'', enrichmentDone:false
+};
+
+const UNIT_META=[
+  {cls:'u0', ico:'➡️', name:'Sıralı Adımlar', tag:'SEQUENCE',
+   intro:'Algoritma, bir işi <b>doğru sırayla</b> yapmak için verilen adım adım yönergedir. Robi sadece dediğini, dediğin sırayla yapar. Sıra yanlışsa sonuç yanlış olur!'},
+  {cls:'u1', ico:'🔁', name:'Tekrar (Döngü)', tag:'LOOP',
+   intro:'Aynı komutu defalarca yazmak yerine <b>“şu kadar kez tekrarla”</b> deriz. Buna <b>döngü</b> denir. Az komutla çok iş yaparız.'},
+  {cls:'u2', ico:'🔀', name:'Koşul (Eğer…ise)', tag:'IF / ELSE',
+   intro:'Bazen ne yapacağımız duruma bağlıdır. <b>“Eğer önünde engel varsa şunu yap, değilse bunu yap”</b> deriz. Buna <b>koşul</b> denir. Robi kendi kendine karar verir!'}
+];
+
+/* ---------- API ANAHTARI / YAPAY ZEKÂ (OpenRouter) ---------- */
+function getKey(){
+  if(EMBEDDED_KEY && EMBEDDED_KEY.trim()) return EMBEDDED_KEY.trim();
+  return document.getElementById('apiKey').value.trim();
+}
+async function callGemini(prompt){
+  const key=getKey();
+  if(!key) throw new Error("NO_KEY");
+  const res=await fetch(AI_ENDPOINT,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+    body:JSON.stringify({model:AI_MODEL,messages:[{role:'user',content:prompt}]})
+  });
+  const data=await res.json();
+  if(data.error) throw new Error((data.error.message)||'Yapay zekâ servisi hata verdi.');
+  if(!data.choices||!data.choices[0]||!data.choices[0].message) throw new Error('Yanıt alınamadı, tekrar dene.');
+  return data.choices[0].message.content.trim();
+}
+
+/* ---------- MASTERY PATH ÇİZİMİ ---------- */
+function unitUnlocked(i){
+  if(i===0) return true;
+  return state.units[i-1].mastered;
+}
+function pct(u){
+  if(u.quizScore===null) return 0;
+  return Math.round(u.quizScore/u.quizTotal*100);
+}
+function renderStations(){
+  const el=document.getElementById('stations');
+  let html='<div class="track"></div>';
+  UNIT_META.forEach((m,i)=>{
+    const u=state.units[i];
+    const unlocked=unitUnlocked(i);
+    let cls='station';
+    if(i===state.current) cls+=' active';
+    if(u.mastered) cls+=' mastered';
+    if(!unlocked) cls+=' locked';
+    const p=pct(u);
+    const ring=`<svg class="ring" viewBox="0 0 80 80"><circle cx="40" cy="40" r="38" fill="none" stroke="${u.mastered?'#21a366':'#ff8a3d'}" stroke-width="4" stroke-linecap="round" stroke-dasharray="${238.7} ${238.7}" stroke-dashoffset="${238.7*(1-p/100)}" transform="rotate(-90 40 40)" style="opacity:${p>0?1:0}"/></svg>`;
+    const badge = u.mastered ? '<div class="lockbadge">✓</div>' : (unlocked? '' : '<div class="lockbadge">🔒</div>');
+    html+=`<button class="${cls}" onclick="goUnit(${i})">
+      <div class="node">${ring}<span class="num">${i+1}</span>${badge}</div>
+      <div class="st-name">${m.name}</div>
+      <span class="st-tag">${m.tag}</span>
+      <div class="st-pct">${u.quizScore===null?'henüz yok':p+'% ustalık'}</div>
+    </button>`;
+  });
+  // Zenginleştirme istasyonu
+  const allM=state.units.every(u=>u.mastered);
+  html+=`<button class="station ${allM?'active':'locked'} ${state.current===3?'active':''}" onclick="goUnit(3)" style="flex:.8">
+    <div class="node" style="border-color:${allM?'#ff8a3d':'#9aa6bd'};background:${allM?'#fff6ef':'#fff'}">
+      <span class="ico">⭐</span>${allM?'':'<div class="lockbadge">🔒</div>'}</div>
+    <div class="st-name">Usta Görevi</div><span class="st-tag">ZENGİNLEŞTİRME</span>
+    <div class="st-pct">${allM?'açık!':'kilitli'}</div>
+  </button>`;
+  el.innerHTML=html;
+}
+
+/* ---------- ÜNİTEYE GİT ---------- */
+function goUnit(i){
+  if(i<3 && !unitUnlocked(i)){ shakeLocked(); return; }
+  if(i===3 && !state.units.every(u=>u.mastered)){ shakeLocked(); return; }
+  state.current=i;
+  renderStations();
+  renderPanel();
+  document.getElementById('panel').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function shakeLocked(){
+  const p=document.getElementById('panel');
+  p.animate([{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}],{duration:280});
+}
+
+/* ---------- PANEL RENDER ---------- */
+function renderPanel(){
+  const panel=document.getElementById('panel');
+  if(state.current===3){ renderEnrichment(panel); return; }
+  const i=state.current;
+  const m=UNIT_META[i], u=state.units[i];
+  panel.className='panel '+m.cls;
+  panel.innerHTML=`
+    <div class="phead"><div class="pico">${m.ico}</div>
+      <div><h2>Ünite ${i+1}: ${m.name}</h2><p>${m.tag} • Tam Öğrenme ünitesi</p></div></div>
+    <div class="pbody">
+      <div class="step solid"><span class="steptag">1 • ÖĞREN</span>
+        <h3>${m.name} nedir?</h3><p class="lead">${m.intro}</p>${extraLearn(i)}</div>
+      <div class="step"><span class="steptag">2 • UYGULA</span>
+        <h3>Robi'yi 🔋 bataryaya ulaştır</h3>
+        <p>${practiceHint(i)}</p>
+        <div id="simArea"></div>
+      </div>
+      <div class="step" id="quizStep"><span class="steptag">3 • İZLEME TESTİ</span>
+        <h3>Ne kadar ustalaştın?</h3>
+        <p>5 sorudan en az <b>4 doğru (%80)</b> = bu üniteyi ustalıkla geçtin ✓</p>
+        <div id="quizArea"></div>
+      </div>
+      <div class="step solid" id="reflectStep"><span class="steptag">4 • DÜŞÜN & PAYLAŞ</span>
+        <h3>Kendi cümlelerinle anlat</h3>
+        <p>${REFLECT_Q[i]}</p>
+        <textarea id="reflectBox" placeholder="Cevabını buraya yaz…">${u.reflection||''}</textarea>
+        <div class="actions"><button class="btn btn-run" onclick="getReflectionFeedback()">🤖 Yapay zekâdan geri bildirim al</button></div>
+        <div class="ai hide" id="reflectAI"><div class="ai-head">🤖 Robi'nin Yardımcısı<span class="live">CANLI</span></div><div class="ai-body" id="reflectAIBody"></div></div>
+      </div>
+    </div>`;
+  buildSim(i);
+  buildQuiz(i);
+}
+
+function extraLearn(i){
+  if(i===1) return `<p style="margin-top:8px">Örnek: <span class="kw" style="font-family:Space Mono;color:var(--loop)">İleri, İleri, İleri, İleri, İleri</span> yerine → <span class="kw" style="font-family:Space Mono;color:var(--loop)">Tekrar 5 kez { İleri }</span></p>`;
+  if(i===2) return `<p style="margin-top:8px">Robi köşenin nerede olduğunu önceden bilmez. Bu yüzden tek tek komut yerine bir <b>kural</b> veririz; Robi her adımda kendisi karar verir.</p>`;
+  return '';
+}
+function practiceHint(i){
+  return [
+    'İleri ve dönüş komutlarını <b>doğru sırayla</b> diz. Sıra önemlidir!',
+    'Koridor uzun! Tek tek İleri yazmak yerine <b>döngü</b> kur: kaç kez tekrarlanacağını ve neyin tekrarlanacağını seç.',
+    'Köşeyi bir <b>kural</b> ile geç: “Eğer önünde engel varsa … değilse …”. Doğru kararları seç ve Robi otomatik dolaşsın.'
+  ][i];
+}
+
+/* ---------- SİMÜLASYON (grid + builder) ---------- */
+let simProgram=[]; // ünite 1
+let loopBody=[];    // ünite 2 döngü gövdesi
+let animTimer=null;
+
+function buildSim(i){
+  const area=document.getElementById('simArea');
+  const puz=PUZZLES[i];
+  area.innerHTML=`<div class="simrow">
+    <div class="gridbox">${gridHTML(puz)}</div>
+    <div class="builder" id="builderBox"></div>
+  </div>
+  <div class="runmsg" id="runMsg"></div>
+  <div class="ai hide" id="simAI"><div class="ai-head">🤖 Robi'nin Yardımcısı<span class="live">CANLI</span></div><div class="ai-body" id="simAIBody"></div></div>`;
+  placeRobot(puz, puz.start);
+  if(i===0) builderSeq();
+  if(i===1) builderLoop();
+  if(i===2) builderCond();
+}
+
+function gridHTML(puz){
+  const R=puz.grid.length,C=puz.grid[0].length;
+  let cells='';
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++){
+    let cl='cell';
+    if(puz.grid[r][c]===1)cl+=' wall';
+    if(puz.goal.r===r&&puz.goal.c===c)cl+=' goal';
+    if(puz.start.r===r&&puz.start.c===c)cl+=' start';
+    cells+=`<div class="${cl}" data-r="${r}" data-c="${c}"></div>`;
+  }
+  return `<div class="grid" id="grid" style="grid-template-columns:repeat(${C},1fr)">${cells}
+    <div class="robot" id="robot"><svg viewBox="0 0 24 24"><rect x="5" y="8" width="14" height="11" rx="3" fill="#ff8a3d"/><circle cx="9.3" cy="13" r="1.6" fill="#252a63"/><circle cx="14.7" cy="13" r="1.6" fill="#252a63"/><rect x="10.7" y="3.5" width="2.6" height="3.5" rx="1.3" fill="#252a63"/><circle cx="12" cy="3" r="1.5" fill="#252a63"/></svg></div>
+  </div>`;
+}
+function placeRobot(puz,bot){
+  const robot=document.getElementById('robot');if(!robot)return;
+  const grid=document.getElementById('grid');if(!grid)return;
+  const cell=grid.querySelector(`.cell[data-r="${bot.r}"][data-c="${bot.c}"]`);
+  if(!cell)return;
+  const x=cell.offsetLeft+(cell.offsetWidth-robot.offsetWidth)/2;
+  const y=cell.offsetTop+(cell.offsetHeight-robot.offsetHeight)/2;
+  robot.style.transform=`translate(${x}px, ${y}px) rotate(${bot.dir*90}deg)`;
+}
+
+function builderSeq(){
+  document.getElementById('builderBox').innerHTML=`
+    <div class="palette">
+      <button class="cmd-btn cmd-F" onclick="addCmd('F')">⬆️ İleri</button>
+      <button class="cmd-btn cmd-R" onclick="addCmd('R')">↻ Sağa Dön</button>
+      <button class="cmd-btn cmd-L" onclick="addCmd('L')">↺ Sola Dön</button>
+    </div>
+    <div class="program" id="program"></div>
+    <div class="actions">
+      <button class="btn btn-run" id="runBtn" onclick="runSeq()">▶️ Çalıştır</button>
+      <button class="btn btn-ghost" onclick="clearSeq()">🗑️ Temizle</button>
+    </div>`;
+  simProgram=[];renderProgram();
+}
+function addCmd(c){simProgram.push(c);renderProgram();}
+function renderProgram(){
+  const p=document.getElementById('program');if(!p)return;
+  const lbl={F:'⬆️ İleri',R:'↻ Sağ',L:'↺ Sol'},cl={F:'cF',R:'cR',L:'cL'};
+  p.innerHTML=simProgram.map((c,idx)=>`<span class="chip ${cl[c]}">${lbl[c]}<span class="x" onclick="delCmd(${idx})">✕</span></span>`).join('');
+}
+function delCmd(i){simProgram.splice(i,1);renderProgram();}
+function clearSeq(){simProgram=[];renderProgram();}
+function runSeq(){ animate(simProgram,0); }
+
+function builderLoop(){
+  document.getElementById('builderBox').innerHTML=`
+    <div class="loopbuilder">
+      <div class="loopline">
+        <span class="lbl">🔁 Tekrar</span>
+        <input type="number" id="loopN" min="1" max="12" value="3">
+        <span class="lbl">kez şunları yap:</span>
+      </div>
+      <div class="palette">
+        <button class="cmd-btn cmd-F" onclick="addLoopBody('F')">⬆️ İleri</button>
+        <button class="cmd-btn cmd-R" onclick="addLoopBody('R')">↻ Sağa Dön</button>
+        <button class="cmd-btn cmd-L" onclick="addLoopBody('L')">↺ Sola Dön</button>
+      </div>
+      <div class="program" id="loopProg"></div>
+      <div class="actions">
+        <button class="btn btn-run" onclick="runLoop()">▶️ Çalıştır</button>
+        <button class="btn btn-ghost" onclick="clearLoop()">🗑️ Temizle</button>
+      </div>
+    </div>`;
+  loopBody=[];renderLoopBody();
+}
+function addLoopBody(c){loopBody.push(c);renderLoopBody();}
+function renderLoopBody(){
+  const p=document.getElementById('loopProg');if(!p)return;
+  const lbl={F:'⬆️ İleri',R:'↻ Sağ',L:'↺ Sol'},cl={F:'cF',R:'cR',L:'cL'};
+  p.innerHTML=loopBody.map((c,idx)=>`<span class="chip ${cl[c]}">${lbl[c]}<span class="x" onclick="delLoopBody(${idx})">✕</span></span>`).join('');
+}
+function delLoopBody(i){loopBody.splice(i,1);renderLoopBody();}
+function clearLoop(){loopBody=[];renderLoopBody();}
+function runLoop(){
+  const n=parseInt(document.getElementById('loopN').value)||0;
+  if(loopBody.length===0){flashMsg(false,'Önce döngünün içine en az bir komut ekle!');return;}
+  animate([{type:'repeat',n,body:loopBody.slice()}],1);
+}
+
+function builderCond(){
+  document.getElementById('builderBox').innerHTML=`
+    <div class="condbuilder">
+      <div class="condline"><span class="kw">EĞER</span> önünde engel varsa →
+        <select id="thenSel"><option value="">seç…</option><option value="F">İleri</option><option value="R">Sağa Dön</option><option value="L">Sola Dön</option></select>
+      </div>
+      <div class="condline"><span class="kw">DEĞİLSE</span> →
+        <select id="elseSel"><option value="">seç…</option><option value="F">İleri</option><option value="R">Sağa Dön</option><option value="L">Sola Dön</option></select>
+      </div>
+      <p style="font-size:13px;color:var(--ink-soft);margin:6px 0 0">Robi bu kuralı, bataryaya ulaşana kadar tekrar tekrar uygular.</p>
+    </div>
+    <div class="actions">
+      <button class="btn btn-run" onclick="runCond()">▶️ Çalıştır</button>
+    </div>`;
+}
+function runCond(){
+  const t=document.getElementById('thenSel').value, e=document.getElementById('elseSel').value;
+  if(!t||!e){flashMsg(false,'Hem EĞER hem DEĞİLSE için bir hareket seç!');return;}
+  const prog=[{type:'repeat',n:25,body:[{type:'if',then:[t],else:[e]}]}];
+  animate(prog,2);
+}
+
+/* ---------- ANİMASYON ---------- */
+function animate(program,unitIdx){
+  const puz=PUZZLES[unitIdx];
+  const res=runProgram(program,puz);
+  // reset robot
+  placeRobot(puz,puz.start);
+  document.querySelectorAll('.btn-run').forEach(b=>b.disabled=true);
+  const msg=document.getElementById('runMsg');msg.className='runmsg';msg.style.display='none';
+  let k=0;const tr=res.trace;
+  clearInterval(animTimer);
+  animTimer=setInterval(()=>{
+    if(k>=tr.length){
+      clearInterval(animTimer);
+      document.querySelectorAll('.btn-run').forEach(b=>b.disabled=false);
+      finishRun(res,unitIdx);
+      return;
+    }
+    placeRobot(puz,tr[k]);k++;
+  },330);
+}
+function finishRun(res,unitIdx){
+  if(res.success){
+    flashMsg(true,'🎉 Harika! Robi bataryaya ulaştı. Bu görevi başardın!');
+    state.units[unitIdx].practiceDone=true;
+    renderStations(); refreshTeacher();
+  }else{
+    flashMsg(false, res.failed? '💥 Robi bir engele/duvara çarptı. Komutlarını gözden geçir.' : '🤔 Robi bataryaya ulaşamadı. Tekrar dene!');
+    aiCorrectivePractice(unitIdx,res);
+  }
+}
+function flashMsg(ok,text){
+  const msg=document.getElementById('runMsg');
+  msg.className='runmsg '+(ok?'ok':'bad');msg.textContent=text;msg.style.display='block';
+}
+
+/* ---------- AI: pratik için düzeltici geri bildirim ---------- */
+async function aiCorrectivePractice(unitIdx,res){
+  const box=document.getElementById('simAI'),body=document.getElementById('simAIBody');
+  if(!getKey()) return; // anahtar yoksa sessiz geç (araç yine çalışır)
+  box.classList.remove('hide');
+  body.className='ai-body';body.innerHTML='<span class="spinner"></span>Robi düşünüyor…';
+  const topic=['sıralı adımlar (komutların doğru sırada olması)','döngü (tekrar)','koşul (eğer-değilse)'][unitIdx];
+  const prompt=`Sen 5-6. sınıf öğrencilerine kodlama öğreten, çok sıcak ve cesaretlendirici bir yardımcı robotsun. Bir öğrenci "${topic}" konusundaki robot bulmacasını çözemedi (robot hedefe ulaşamadı${res.failed?' ve bir engele çarptı':''}). Öğrenciye 5-6. sınıf seviyesinde, ÇOK KISA (en fazla 3 cümle), pozitif ve cesaretlendirici bir DÜZELTİCİ İPUCU ver. ASLA doğrudan cevabı/komut dizisini verme; sadece nasıl düşünmesi gerektiğine dair bir ipucu ver. Emoji kullanabilirsin. Türkçe yaz.`;
+  try{ body.textContent=await callGemini(prompt); }
+  catch(e){ body.className='ai-body muted'; body.textContent= e.message==='NO_KEY'?'(Yapay zekâ ipucu için öğretmenin API anahtarı gerekir.)':'Bağlantı kurulamadı: '+e.message; }
+}
+
+/* ---------- QUIZ ---------- */
+const QUIZZES=[
+ [ // Ünite 1 — sıralama
+  {q:'Algoritma en iyi nasıl tanımlanır?',o:['Bir işi yapmak için adım adım, sıralı yönergeler','Bir bilgisayar oyunu','Sadece sayılardan oluşan bir liste','Robotun rengi'],a:0},
+  {q:'Robi komutları nasıl uygular?',o:['Karışık sırayla','Yazdığın sırayla, tek tek','Sadece sonuncuyu','Hiçbirini'],a:1},
+  {q:'"İleri, Sağa Dön, İleri" ile "Sağa Dön, İleri, İleri" …',o:['Aynı sonucu verir','Farklı sonuç verebilir çünkü sıra önemlidir','İkisi de çalışmaz','Robotu kapatır'],a:1},
+  {q:'Robi hedefe ulaşamadıysa ilk ne yaparsın?',o:['Pes ederim','Komutların sırasını gözden geçiririm','Ekranı kapatırım','Robotu değiştiririm'],a:1},
+  {q:'Sıralama (sequence) ne demek?',o:['Komutların belirli bir düzende olması','Komutları silmek','Robotu döndürmek','Sesli komut'],a:0}
+ ],
+ [ // Ünite 2 — döngü
+  {q:'Döngü (tekrar) ne işe yarar?',o:['Robotu durdurur','Aynı komutu defalarca yazmadan tekrarlatır','Rengi değiştirir','Hiçbir işe'],a:1},
+  {q:'5 kez ileri gitmek için en verimli yol?',o:['İleri komutunu 5 kez yazmak','Tekrar 5 kez { İleri }','Tek bir İleri','Sağa dön 5 kez'],a:1},
+  {q:'"Tekrar 3 kez { İleri, Sağa Dön }" kaç komut çalıştırır?',o:['2','3','6','9'],a:2},
+  {q:'Döngü kullanmanın faydası nedir?',o:['Daha çok yazmak','Daha az komutla daha çok iş','Robotu yormak','Hiçbiri'],a:1},
+  {q:'Döngünün içine ne koyarız?',o:['Tekrarlanmasını istediğimiz komutları','Sadece sayıları','Robotun adını','Hiçbir şey'],a:0}
+ ],
+ [ // Ünite 3 — koşul
+  {q:'Koşul (eğer…ise) ne sağlar?',o:['Robotun duruma göre karar vermesini','Robotun susmasını','Daha hızlı gitmesini','Rengini'],a:0},
+  {q:'"Eğer önünde engel varsa Sola Dön, değilse İleri" ne yapar?',o:['Her zaman ileri gider','Engel varsa döner, yoksa ilerler','Hiç hareket etmez','Her zaman döner'],a:1},
+  {q:'Koşul neden işe yarar (robot köşeyi bilmiyorsa)?',o:['Robi her durumda doğru kararı kendi verir','Gereksizdir','Robotu yavaşlatır','Sadece süslemedir'],a:0},
+  {q:'"Değilse" (else) kısmı ne zaman çalışır?',o:['Koşul doğruyken','Koşul yanlışken (engel yokken)','Her zaman','Hiçbir zaman'],a:1},
+  {q:'Koşul + döngü birlikte kullanılırsa…',o:['Robi tekrar tekrar karar vererek yol bulur','Robi bozulur','Hiçbir şey olmaz','Sadece bir kez karar verir'],a:0}
+ ]
+];
+const REFLECT_Q=[
+ 'Bir arkadaşına “algoritma nedir ve sıra neden önemlidir?” diye soruyorlar. Sen nasıl açıklarsın?',
+ 'Döngü (tekrar) işimizi neden kolaylaştırır? Günlük hayattan bir örnek ver.',
+ 'Robi köşenin yerini bilmediği hâlde koşul sayesinde nasıl yol buluyor? Kendi cümlelerinle anlat.'
+];
+
+let quizAnswers=[];
+function buildQuiz(i){
+  const area=document.getElementById('quizArea');
+  quizAnswers=new Array(QUIZZES[i].length).fill(null);
+  const u=state.units[i];
+  let html='';
+  QUIZZES[i].forEach((item,qi)=>{
+    html+=`<div class="q"><div class="qtext">${qi+1}. ${item.q}</div>`;
+    item.o.forEach((opt,oi)=>{
+      html+=`<button class="opt" id="q${qi}o${oi}" onclick="pickOpt(${qi},${oi})">${opt}</button>`;
+    });
+    html+='</div>';
+  });
+  html+=`<div class="quizfoot">
+    <button class="btn btn-run" id="quizSubmit" onclick="submitQuiz()">✅ Testi Gönder</button>
+    <span id="quizResult"></span></div>
+    <div class="ai hide" id="quizAI"><div class="ai-head">🤖 Robi'nin Yardımcısı<span class="live">CANLI</span></div><div class="ai-body" id="quizAIBody"></div></div>`;
+  area.innerHTML=html;
+  if(u.quizScore!==null) showStoredQuiz(i);
+}
+function pickOpt(qi,oi){
+  if(document.getElementById('quizSubmit').disabled) return;
+  quizAnswers[qi]=oi;
+  QUIZZES[state.current][qi].o.forEach((_,k)=>{
+    document.getElementById(`q${qi}o${k}`).classList.toggle('sel',k===oi);
+  });
+}
+function submitQuiz(){
+  const i=state.current,quiz=QUIZZES[i];
+  if(quizAnswers.includes(null)){alert('Lütfen tüm soruları yanıtla 🙂');return;}
+  let score=0;
+  quiz.forEach((item,qi)=>{
+    const chosen=quizAnswers[qi];
+    document.getElementById(`q${qi}o${item.a}`).classList.add('correct');
+    if(chosen===item.a) score++;
+    else document.getElementById(`q${qi}o${chosen}`).classList.add('wrong');
+    item.o.forEach((_,k)=>document.getElementById(`q${qi}o${k}`).disabled=true);
+  });
+  document.getElementById('quizSubmit').disabled=true;
+  const u=state.units[i];u.quizScore=score;
+  const passed=score/u.quizTotal>=0.8;
+  const pctv=Math.round(score/u.quizTotal*100);
+  document.getElementById('quizResult').innerHTML=
+    `<span class="scorebadge ${passed?'pass':'fail'}">${score}/${u.quizTotal} • %${pctv} ${passed?'• USTALIK ✓':'• %80 gerekli'}</span>`;
+  if(passed && u.practiceDone){
+    u.mastered=true;
+    document.getElementById('quizResult').innerHTML+=` <span style="font-weight:800;color:var(--mastery)"> Sonraki ünite açıldı! 🔓</span>`;
+  }else if(passed && !u.practiceDone){
+    document.getElementById('quizResult').innerHTML+=` <span style="font-weight:800;color:var(--amber-d)"> Önce yukarıdaki robot görevini de tamamla!</span>`;
+  }else{
+    aiCorrectiveQuiz(i,score);
+    setTimeout(()=>{ // tekrar deneme imkânı
+      const r=document.getElementById('quizResult');
+      r.innerHTML+=` <button class="btn btn-ghost" onclick="buildQuiz(${i})" style="margin-left:6px">🔄 Tekrar dene</button>`;
+    },400);
+  }
+  renderStations();refreshTeacher();
+}
+function showStoredQuiz(i){
+  const u=state.units[i];const pctv=Math.round(u.quizScore/u.quizTotal*100);const passed=u.quizScore/u.quizTotal>=0.8;
+  document.getElementById('quizResult').innerHTML=`<span class="scorebadge ${passed?'pass':'fail'}">Önceki: ${u.quizScore}/${u.quizTotal} • %${pctv}</span> <button class="btn btn-ghost" onclick="buildQuiz(${i})" style="margin-left:6px">🔄 Tekrar çöz</button>`;
+}
+async function aiCorrectiveQuiz(i,score){
+  const box=document.getElementById('quizAI'),body=document.getElementById('quizAIBody');
+  if(!getKey())return;
+  box.classList.remove('hide');
+  body.className='ai-body';body.innerHTML='<span class="spinner"></span>Robi senin için bir ipucu hazırlıyor…';
+  const wrong=QUIZZES[i].filter((item,qi)=>quizAnswers[qi]!==item.a).map(item=>item.q);
+  const topic=['sıralı adımlar','döngü (tekrar)','koşul (eğer-değilse)'][i];
+  const prompt=`Sen 5-6. sınıf öğrencilerine kodlama öğreten sıcak, cesaretlendirici bir yardımcı robotsun. Öğrenci "${topic}" konulu izleme testinden 5 üzerinden ${score} aldı (ustalık için 4 gerekli). Yanlış yaptığı sorular şunlar: ${wrong.join(' | ')}. Bu öğrenciye 5-6. sınıf seviyesinde, ÇOK KISA (en fazla 4 cümle) ve pozitif bir DÜZELTİCİ AÇIKLAMA yap: hangi kavramı tekrar gözden geçirmesi gerektiğini basitçe anlat ve onu cesaretlendir. Doğrudan test cevaplarını verme, kavramı açıkla. Emoji kullanabilirsin. Türkçe yaz.`;
+  try{ body.textContent=await callGemini(prompt);}
+  catch(e){ body.className='ai-body muted'; body.textContent=e.message==='NO_KEY'?'(Yapay zekâ açıklaması için API anahtarı gerekir.)':'Bağlantı hatası: '+e.message;}
+}
+
+/* ---------- AI: yansıtma geri bildirimi ---------- */
+async function getReflectionFeedback(){
+  const i=state.current;const txt=document.getElementById('reflectBox').value.trim();
+  state.units[i].reflection=txt;
+  const box=document.getElementById('reflectAI'),body=document.getElementById('reflectAIBody');
+  if(!txt){alert('Önce cevabını yaz 🙂');return;}
+  box.classList.remove('hide');
+  body.className='ai-body';body.innerHTML='<span class="spinner"></span>Robi cevabını okuyor…';
+  const topic=['algoritma ve sıralama','döngü','koşul'][i];
+  const prompt=`Sen 5-6. sınıf öğrencilerine kodlama öğreten sıcak, cesaretlendirici bir yardımcı robotsun. Konu: ${topic}. Öğrencinin yazdığı açıklama şu: "${txt}". Bu açıklamayı 5-6. sınıf seviyesinde değerlendir: ÇOK KISA (en fazla 4 cümle) ol, önce güzel olan bir noktayı öv, sonra eksikse nazikçe küçük bir ekleme/düzeltme öner. Pozitif ve cesaretlendirici ol, not/puan verme. Emoji kullanabilirsin. Türkçe yaz.`;
+  try{ body.textContent=await callGemini(prompt);}
+  catch(e){ body.className='ai-body muted'; body.textContent=e.message==='NO_KEY'?'(Geri bildirim için öğretmenin API anahtarını girmesi gerekir.)':'Bağlantı hatası: '+e.message;}
+}
+
+/* ---------- ZENGİNLEŞTİRME ---------- */
+function renderEnrichment(panel){
+  panel.className='panel uE';
+  panel.innerHTML=`
+    <div class="phead"><div class="pico">⭐</div><div><h2>Usta Görevi</h2><p>ZENGİNLEŞTİRME • üç üniteyi de ustalıkla geçtin!</p></div></div>
+    <div class="pbody">
+      <div class="step solid"><span class="steptag">TEBRİKLER</span>
+        <h3>Sıralama + Döngü + Koşul = gerçek bir programcı 🎉</h3>
+        <p>Artık üç kavramı da biliyorsun. Yapay zekâ sana özel, seviyene uygun yeni bir <b>usta görevi</b> hazırlasın. Hazır olduğunda dene!</p>
+        <div class="actions"><button class="btn btn-run" onclick="genEnrichment()">🤖 Bana özel görev üret</button></div>
+        <div class="ai hide" id="enrAI"><div class="ai-head">🤖 Robi'nin Yardımcısı<span class="live">CANLI</span></div><div class="ai-body" id="enrAIBody"></div></div>
+      </div>
+      <div class="step"><span class="steptag">TESLİM</span>
+        <h3>Çalışmanı öğretmenine gönder</h3>
+        <p>Tüm ustalık durumun ve yazdığın cevaplar tek dosyada toplanır.</p>
+        <div class="actions">
+          <button class="btn btn-run" onclick="downloadReport()">⬇️ Çıkış Bileti (.txt) indir</button>
+          <button class="btn btn-ghost" onclick="copyReport()">📋 Kopyala</button>
+        </div>
+      </div>
+    </div>`;
+  if(state.enrichmentText){
+    document.getElementById('enrAI').classList.remove('hide');
+    document.getElementById('enrAIBody').textContent=state.enrichmentText;
+  }
+}
+async function genEnrichment(){
+  const box=document.getElementById('enrAI'),body=document.getElementById('enrAIBody');
+  box.classList.remove('hide');
+  body.className='ai-body';body.innerHTML='<span class="spinner"></span>Sana özel görev hazırlanıyor…';
+  const prompt=`Sen 5-6. sınıf öğrencilerine kodlama öğreten yaratıcı bir yardımcı robotsun. Öğrenci sıralama, döngü ve koşul konularının üçünü de ustalıkla tamamladı. Ona EĞLENCELİ, kısa bir ZENGİNLEŞTİRME görevi yaz: bir robotu ızgarada hedefe götürmesini isteyen, döngü VE koşulu birlikte kullanmayı gerektiren tek paragraflık bir bulmaca senaryosu kur (kod yazdırma, hikâye gibi anlat). 5-6. sınıf seviyesinde, en fazla 6 cümle, emoji kullan, Türkçe yaz.`;
+  try{ state.enrichmentText=await callGemini(prompt); body.textContent=state.enrichmentText; state.enrichmentDone=true; refreshTeacher();}
+  catch(e){ body.className='ai-body muted'; body.textContent=e.message==='NO_KEY'?'(Görev üretmek için öğretmenin API anahtarı gerekir.)':'Bağlantı hatası: '+e.message;}
+}
+
+/* ---------- MOD / ÖĞRETMEN ---------- */
+function setMode(m){
+  state.mode=m;
+  document.getElementById('mStudent').classList.toggle('on',m==='student');
+  document.getElementById('mTeacher').classList.toggle('on',m==='teacher');
+  document.getElementById('teacher').style.display = m==='teacher'?'block':'none';
+  document.getElementById('panel').style.display = m==='teacher'?'none':'block';
+  if(m==='teacher'){refreshTeacher();document.getElementById('teacher').scrollIntoView({behavior:'smooth'});}
+}
+function refreshTeacher(){
+  const tb=document.getElementById('ttbody');if(!tb)return;
+  let html='';
+  state.units.forEach((u,i)=>{
+    const p=pct(u);
+    let status,cls;
+    if(u.mastered){status='Ustalaştı';cls='sp-m';}
+    else if(!unitUnlocked(i)){status='Kilitli';cls='sp-l';}
+    else{status='Devam ediyor';cls='sp-p';}
+    html+=`<tr>
+      <td><b>${i+1}. ${UNIT_META[i].name}</b></td>
+      <td>${u.quizScore===null?'—':u.quizScore+'/'+u.quizTotal}</td>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="bar"><i style="width:${p}%;background:${u.mastered?'#21a366':'#ff8a3d'}"></i></div><span style="font-weight:800;font-size:13px">${p}%</span></div></td>
+      <td><span class="status-pill ${cls}">${status}</span></td>
+    </tr>`;
+  });
+  const allM=state.units.every(u=>u.mastered);
+  html+=`<tr><td><b>⭐ Usta Görevi</b></td><td>—</td><td>${state.enrichmentDone?'Üretildi':'—'}</td><td><span class="status-pill ${allM?'sp-m':'sp-l'}">${allM?(state.enrichmentDone?'Tamamlandı':'Açık'):'Kilitli'}</span></td></tr>`;
+  tb.innerHTML=html;
+}
+
+/* ---------- RAPOR / ÇIKIŞ BİLETİ ---------- */
+function buildReport(){
+  const name=document.getElementById('studentName').value.trim()||'(isim girilmedi)';
+  const d=new Date().toLocaleString('tr-TR');
+  let r=`ALGORİTMA USTALIK YOLU — ÇIKIŞ BİLETİ\n`;
+  r+=`Öğrenci: ${name}\nTarih: ${d}\nYaklaşım: Tam Öğrenme Modeli\n`;
+  r+=`========================================\n\n`;
+  state.units.forEach((u,i)=>{
+    r+=`ÜNİTE ${i+1}: ${UNIT_META[i].name}\n`;
+    r+=`  İzleme Testi: ${u.quizScore===null?'çözülmedi':u.quizScore+'/'+u.quizTotal+' (%'+pct(u)+')'}\n`;
+    r+=`  Robot Görevi: ${u.practiceDone?'tamamlandı ✓':'tamamlanmadı'}\n`;
+    r+=`  Ustalık: ${u.mastered?'EVET ✓':'henüz değil'}\n`;
+    r+=`  Yansıtma cevabı: ${u.reflection?u.reflection:'(yazılmadı)'}\n\n`;
+  });
+  if(state.enrichmentText) r+=`USTA GÖREVİ (Zenginleştirme):\n${state.enrichmentText}\n\n`;
+  const masteredCount=state.units.filter(u=>u.mastered).length;
+  r+=`SONUÇ: ${masteredCount}/3 ünite ustalıkla tamamlandı.\n`;
+  return r;
+}
+function downloadReport(){
+  const blob=new Blob([buildReport()],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  const nm=(document.getElementById('studentName').value.trim()||'ogrenci').replace(/\s+/g,'_');
+  a.download=`cikis_bileti_${nm}.txt`;a.click();URL.revokeObjectURL(a.href);
+}
+function copyReport(){
+  navigator.clipboard.writeText(buildReport()).then(()=>alert('Rapor panoya kopyalandı 📋'));
+}
+
+/* ---------- BAŞLAT ---------- */
+function init(){
+  if(EMBEDDED_KEY && EMBEDDED_KEY.trim()){
+    var kf=document.getElementById('keyField'); if(kf) kf.style.display='none';
+    var kh=document.querySelector('.keyhint');
+    if(kh) kh.innerHTML='Yapay zekâ destekli kişisel geri bildirim hazır \u2014 öğrencinin anahtar girmesine gerek yok. Robot görevleri ve testler her hâlükârda çalışır.';
+  }
+  renderStations(); renderPanel(); refreshTeacher();
+  document.getElementById('panel').addEventListener('input',e=>{
+    if(e.target.id==='reflectBox') state.units[state.current].reflection=e.target.value;
+  });
+  window.addEventListener('resize',()=>{ if(state.current<3){const p=PUZZLES[state.current];placeRobot(p,p.start);} });
+}
+init();
+</script>
+</body>
+</html>
